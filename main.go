@@ -2,25 +2,31 @@ package main
 
 import "fmt"
 
-/*
-	код писать в этом файле
-	наверняка у вас будут какие-то структуры с методами, глобальные перменные ( тут можно ), функции
-*/
-
-func main() {
-	fmt.Println("Hello World")
-	/*
-		в этой функции можно ничего не писать
-		но тогда у вас не будет работать через go run main.go
-		очень круто будет сделать построчный ввод команд тут, хотя это и не требуется по заданию
-	*/
+type employee struct {
+	person    string
+	hitpoints int
+	armor     int
 }
 
-func initGame() {
-	/*
-		эта функция инициализирует игровой мир - все команты
-		если что-то было - оно корректно перезатирается
-	*/
+func newEmployee(person string, hitpoints, armor int) employee {
+	return employee{
+		person:    person,
+		hitpoints: hitpoints,
+		armor:     armor,
+	}
+}
+
+func (e employee) getInfo() string {
+	return fmt.Sprintf("Перс: %s\nЗдоровье: %d\nБроня: %d\n", e.person, e.hitpoints, e.armor)
+
+}
+
+func main() {
+	employee1 := newEmployee("Воин", 100, 100)
+	employee2 := newEmployee("Орк", 100, 100)
+
+	fmt.Printf("%s\n", employee1.getInfo())
+	fmt.Printf("%s\n", employee2.getInfo())
 }
 
 func handleCommand(command string) string {
