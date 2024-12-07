@@ -1,51 +1,68 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
 
-type employee struct {
+type Character struct {
 	person    string
 	hitpoints int
 	armor     int
 	damage    int
 }
 
-func newEmployee(person string, hitpoints, armor, damage int) employee {
-	return employee{
-		person:    person,
-		hitpoints: hitpoints,
-		armor:     armor,
-		damage:    damage,
+// вызов инфы//
+func (e *Character) Info() {
+	fmt.Printf("Персонаж: %s\nЗдоровье: %d\nБроня: %d\nНаносимый урон: %d\n", e.person, e.hitpoints, e.armor, e.damage)
+
+}
+
+// Атака (героя/cкелета) //
+func (e *Character) AttackOpponent(opponent *Character) {
+	attack := e.damage - opponent.armor
+	if attack < 0 {
+		attack = 0
 	}
+	opponent.hitpoints -= attack
+	fmt.Printf("%s нанес %d урона %s\n", e.person, opponent.damage, opponent.person)
 }
 
-func (e employee) getDamage() string {
-	return fmt.Sprintf("Персонаж: %s\nЗдоровье: %d\nБроня: %d\nНаносимый урон: %d\n", e.person, e.hitpoints, e.armor, e.damage)
-
-}
-
-func (e employee) setName(person string) {
-	e.person = person
-
-}
-
+// Основная функция(ход боя)
 func main() {
 
-	employee1 := newEmployee("Воин", 100, 100, 15)
-	employee2 := newEmployee("Скелет", 100, 100, 15)
+	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("Выбери героя: \n")
-	fmt.Printf("%s\n", employee1.getDamage())
-	fmt.Printf("%s\n", employee2.getDamage())
+	warrior := Character{"Воин", 100, 10, 15}
+	skeleton := Character{"Скелет", 100, 5, 15}
 
-	a := new
+	// Основной цикл игры
+	for warrior.hitpoints > 0 && skeleton.hitpoints > 0 {
+		fmt.Println("Введите команду (пример: атака воина, атака скелета, инфо герой, инфо скелет):")
+		command, _ := reader.ReadString('\n')
+		command = strings.TrimSpace(strings.ToLower(command))
 
-	switch a(employee1.getDamage()) {
-
-	case a(employee1.getDamage()):
-		fmt.Scan(&employee1.person)
-		fmt.Println("Вы выбрали Воина!\nУдачи в схватке!")
-
+		switch command {
+		case "атака героя":
+			warrior.AttackOpponent(&skeleton)
+			if skeleton.hitpoints <= 0 {
+				fmt.Println("Герой победил!")
+				return
+			}
+		case "атака скелета":
+			skeleton.AttackOpponent(&warrior)
+			if warrior.hitpoints <= 0 {
+				fmt.Println("Герой проиграл!")
+				return
+			}
+		case "инфо герой":
+			warrior.Info()
+		case "инфо скелет":
+			skeleton.Info()
+		default:
+			fmt.Println("Неизвестная команда. Попробуйте снова.")
+		}
 	}
-
-	return
 }
