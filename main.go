@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+// Интерфейс//
+type Creature interface {
+	Move(direction string)
+	Attack(opponent Creature)
+	TakeDamage(amount int)
+	Speak() string
+	GetHealth() string
+}
+
 // Структура для персов//
 type Character struct {
 	person    string
@@ -80,45 +89,70 @@ func printLocations(locations []Location) {
 	}
 }
 
+func (c *Character) Move(direction string) {
+	fmt.Printf("%s перемещается в направлении: %s\n", c.person, direction)
+}
+
 // вызов инфы//
-func (e *Character) Info() {
-	fmt.Printf("Персонаж: %s\nЗдоровье: %d\nБроня: %d\nНаносимый урон: %d\n", e.person, e.hitpoints, e.armor, e.damage)
+func (e *Character) GetHealth() string {
+	return fmt.Sprintf("У %s осталось %d здоровья.", e.person, e.hitpoints)
+}
+
+func (e *Character) TakeDamage(amount int) {
+	e.hitpoints -= amount
+
+	if e.hitpoints < 0 {
+		e.hitpoints = 0
+	}
 
 }
 
 // Атака (героя/cкелета) //
-func (e *Character) AttackOpponent(opponent *Character) {
-	attack := e.damage - opponent.armor
+func (e *Character) Attack(opponent Creature) {
+	opponentCharacter := opponent.(*Character)
+	attack := e.damage - opponentCharacter.armor
 	if attack < 0 {
 		attack = 0
 	}
-	opponent.hitpoints -= attack
-	fmt.Printf("%s нанес %d урона %s\n", opponent.person, opponent.damage, e.person)
+	opponent.TakeDamage(attack)
+	fmt.Printf("%s нанес %d урона %s\n", e.person, attack, opponentCharacter.person)
 }
 
-func battle(warrior *Character, skeleton *Character, reader *bufio.Reader) {
+func (c *Character) Speak() string {
+	switch c.person {
+	case "Воин":
+		return "Воин говорит: 'Я готов к битве!'"
+	case "Скелет":
+		return "Скелет говорит: 'Ты не пройдешь!'"
+	default:
+		return fmt.Sprintf("%s молчит...", c.person)
+	}
+}
+
+func battle(warrior Creature, skeleton Creature, reader *bufio.Reader) {
 	fmt.Println("Неожиданно на вас нападает скелет! Нужно победить его!")
-	for warrior.hitpoints > 0 && skeleton.hitpoints > 0 {
+	fmt.Println(skeleton.Speak())
+	for {
 		fmt.Println("Введите команду (атака, инфо герой, инфо скелет):")
 		command, _ := reader.ReadString('\n')
 		command = strings.TrimSpace(strings.ToLower(command))
 
 		switch command {
 		case "атака":
-			warrior.AttackOpponent(skeleton)
-			if skeleton.hitpoints <= 0 {
+			warrior.Attack(skeleton)
+			if skeleton.(*Character).hitpoints <= 0 {
 				fmt.Println("Вы победили скелета!")
 				return
 			}
-			skeleton.AttackOpponent(warrior)
-			if warrior.hitpoints <= 0 {
+			skeleton.Attack(warrior)
+			if warrior.(*Character).hitpoints <= 0 {
 				fmt.Println("Вы были побеждены скелетом!")
 				return
 			}
 		case "инфо герой":
-			fmt.Printf("У %s осталось %d здоровья.\n", warrior.person, warrior.hitpoints)
+			fmt.Printf(warrior.GetHealth())
 		case "инфо скелет":
-			fmt.Printf("У %s осталось %d здоровья.\n", skeleton.person, skeleton.hitpoints)
+			fmt.Printf(skeleton.GetHealth())
 		default:
 			fmt.Println("Неизвестная команда. Попробуйте снова.")
 		}
@@ -130,8 +164,8 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	warrior := Character{"Воин", 100, 10, 50}
-	skeleton := Character{"Скелет", 100, 5, 30}
+	warrior := &Character{"Воин", 100, 10, 50}
+	skeleton := &Character{"Скелет", 100, 5, 30}
 
 	//создание предметов на локациях//
 	sword := Item{
@@ -192,9 +226,10 @@ func main() {
 		fmt.Println("\nВы находитесь в:", currentLocation.Name)
 		fmt.Println(currentLocation.Description)
 		if currentLocation.Name == "коридор замка" {
-			battle(&warrior, &skeleton, reader)
+			battle(warrior, skeleton, reader)
 			if warrior.hitpoints <= 0 {
 				fmt.Println("Игра окончена, вас убил скелет")
+				return
 			}
 		}
 
@@ -212,6 +247,7 @@ func main() {
 			}
 			for _, character := range currentLocation.Characters {
 				fmt.Println(" -", character.person)
+				fmt.Println(character.Speak())
 			}
 		case "доступные направления":
 			printAvailable(currentLocation)
@@ -252,12 +288,13 @@ func main() {
 						}
 						canMove = true
 						currentLocation = locations[neighbour]
+						warrior.Move(direction)
 						fmt.Println("Вы переместились в:", currentLocation.Name)
 						break
 					}
 				}
 				if canMove && currentLocation.Name == "Коридор замка" && skeleton.hitpoints > 0 {
-					battle(&warrior, &skeleton, reader)
+					battle(warrior, skeleton, reader)
 					if warrior.hitpoints <= 0 {
 						fmt.Println("Игра окончена.")
 						return
